@@ -1,0 +1,70 @@
+name: Artifact Cleanup
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+    inputs:
+      keep_days:
+        description: "Keep artifacts newer than this many days"
+        required: false
+        default: "7"
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  cleanup:
+    name: Delete Old Artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine retention threshold
+        id: retention
+        shell: bash
+        run: |
+          KEEP_DAYS="${{ github.event.inputs.keep_days }}"
+          if [ -z "$KEEP_DAYS" ]; then
+            KEEP_DAYS=7
+          fi
+          echo "keep_days=$KEEP_DAYS" >> "$GITHUB_OUTPUT"
+
+      - name: Delete artifacts older than threshold
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const keepDays = Number('${{ steps.retention.outputs.keep_days }}' || '7');
+            const cutoff = Date.now() - keepDays * 24 * 60 * 60 * 1000;
+
+            let page = 1;
+            let deletedCount = 0;
+
+            while (true) {
+              const res = await github.rest.actions.listArtifactsForRepo({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                per_page: 100,
+                page,
+              });
+
+              const artifacts = res.data.artifacts || [];
+              if (artifacts.length === 0) break;
+
+              for (const artifact of artifacts) {
+                const created = new Date(artifact.created_at).getTime();
+                if (created < cutoff) {
+                  await github.rest.actions.deleteArtifact({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    artifact_id: artifact.id,
+                  });
+                  deletedCount += 1;
+                  core.info(`Deleted artifact: ${artifact.name} (#${artifact.id})`);
+                }
+              }
+
+              if (artifacts.length < 100) break;
+              page += 1;
+            }
+
+            core.notice(`Deleted ${deletedCount} artifact(s) older than ${keepDays} day(s).`);
