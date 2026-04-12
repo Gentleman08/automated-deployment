@@ -589,3 +589,6 @@ Total size: ~209 KB uncompressed, ~70 KB gzipped.
 ## License
 
 ISC
+
+----------------------------------
+Pipeline test 1
