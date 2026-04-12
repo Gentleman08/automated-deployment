@@ -8,6 +8,7 @@ const app = express();
 
 const allowedOrigins = new Set([
   process.env.FRONTEND_ORIGIN || "https://chaitanya-vek.me",
+  "https://student-mgmt-frontend.pages.dev",
   "http://localhost:8080",
   "http://localhost:5173",
 ]);
