@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:  # Manual "Run workflow" button in GitHub Actions UI
 
 permissions:
   contents: read
@@ -29,13 +30,16 @@ jobs:
     name: Detect Changed Paths
     runs-on: ubuntu-latest
     outputs:
-      frontend: ${{ steps.filter.outputs.frontend }}
-      backend: ${{ steps.filter.outputs.backend }}
+#      frontend: ${{ steps.filter.outputs.frontend }}
+#      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.frontend }} # added for manual workflow
+      backend: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.filter.outputs.backend }} # added for manual workflow
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Paths Filter
+        if: github.event_name != 'workflow_dispatch' # added for manual workflow
         id: filter
         uses: dorny/paths-filter@v3
         with:
