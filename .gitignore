@@ -6,3 +6,7 @@ database.env
 /Report 1
 /report
 /Artifacts
+/Reporting
+/Reporting/*
+/nginx
+/nginx/*
